@@ -4,27 +4,9 @@
 #
 #-------------------------------------------------
 
-QT  += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets serialport
-
-TARGET = BootLoaderPC
-TEMPLATE = app
-
-
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    DmxBootProtocol.cpp \
-    HexReader.cpp \
-    settingsdialog.cpp
-
-
-HEADERS  += mainwindow.h \
-    DmxBootProtocol.h \
-    HexReader.h \
-    settingsdialog.h \
-    interfaces/FlasherPluginInterface.h \
-    interfaces/ReaderPluginInterface.h
+TEMPLATE = subdirs 
+SUBDIRS = app \
+    plugins
 
 OTHER_FILES += \
     doc/BootLoaderPC.qdocconf  \
@@ -35,10 +17,3 @@ OTHER_FILES += \
     doc/macros.qdocconf \
     doc/compat.qdocconf \
     doc/docSrc/main.qdoc
-
-FORMS    += mainwindow.ui \
-    settingsdialog.ui
-
-DEFINES += TEST
-
-RESOURCES += resource.qrc

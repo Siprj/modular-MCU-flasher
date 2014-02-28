@@ -1,0 +1,12 @@
+#ifndef HEXREADER_GLOBAL_H
+#define HEXREADER_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(HEXREADER_LIBRARY)
+#  define HEXREADERSHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define HEXREADERSHARED_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // HEXREADER_GLOBAL_H

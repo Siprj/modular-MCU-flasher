@@ -1,0 +1,25 @@
+@startuml
+
+interface FlasherPlugin {
+    + {abstract} initPlugin() : quint32
+    + {abstract} getPluginWidget() ; QWidget
+    + {abstract} flash(QByteArray data) : void 
+    -- 
+    signals:
+    + {abstract} printProgressInfo(QString info) : void
+    + {abstract} progressInPercentage(float progress) : void
+    + {abstract} done() : void
+}
+
+interface ReaderPlugin {
+    + {abstract} initPlugin() : quint32
+    + {abstract} readData(QString fileName) : void 
+    + {abstract} getSuffixesGroups() : QMap<QString, QStringList> 
+    -- 
+    signals:
+    + {abstract} printProgressInfo(QString info) : void
+    + {abstract} progressInPercentage(float progress) : void
+    + {abstract} done(QByteArray data) : void
+}
+
+@enduml

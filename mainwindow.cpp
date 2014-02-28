@@ -8,9 +8,7 @@
 #include <QFileDialog>
 
 #include <QDebug>
-
-
-
+#include <QPluginLoader>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -18,9 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    qDebug()<<"STARTTING DEBUG";
-    qDebug()<<"STARTTING DEBUG";
-    qDebug()<<"STARTTING DEBUG";
+    loadPlugins();
 
     settingDialog = new SettingsDialog;
 
@@ -50,7 +46,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::printDebugInfo(QString text)
 {
-    ui->debugInfoTextEdit->appendPlainText(text+"\n");
+    //ui->debugInfoTextEdit->appendPlainText(text+"\n");
 }
 
 void MainWindow::on_actionOpen_File_triggered()
@@ -90,5 +86,59 @@ void MainWindow::on_bootPushButton_clicked()
 void MainWindow::on_pushButton_2_clicked()
 {
     dmxBootProtocol.startBootSequence(settingDialog->settings().name, 0xE0, array/*QByteArray("Asdfasdfasdfasdf")*/);
-//    dmxBootProtocol.send();
+    //    dmxBootProtocol.send();
+}
+
+void MainWindow::loadPlugins()
+{
+    qDebug()<<"Loading Plugins";
+
+    QDir pluginsDir = QDir(qApp->applicationDirPath());
+    pluginsDir.cd("plugins");
+
+    qDebug()<<"Try to load plugins in folder "<<pluginsDir.path();
+
+    foreach(QString fileName, pluginsDir.entryList(QDir::Files))
+    {
+        qDebug()<<"Testing: "<<pluginsDir.absoluteFilePath(fileName);
+        QPluginLoader *loader = new QPluginLoader(pluginsDir.absoluteFilePath(fileName));
+        QObject *plugin = loader->instance();
+        if (plugin)
+        {
+            qDebug()<<"Loading: "<<fileName;
+            // load
+            publishPlugin(plugin);
+        }
+        else
+        {
+            qDebug()<<"Can't load plugin";
+            qDebug()<<loader->errorString();
+        }
+    }
+
+    qDebug()<<"Loadnig of plugins completed";
+}
+
+void MainWindow::publishPlugin(QObject *plugin)
+{
+    FlasherPluginInterface *flasherPlugin = qobject_cast<FlasherPluginInterface*>(plugin);
+    if(flasherPlugin)
+    {
+
+        QWidget *widget = flasherPlugin->getPluginWidget();
+        ui->flashingTabWidget->addTab(widget, widget->windowTitle());
+        flasherMap[widget] = plugin;
+    }
+
+    ReaderPluginInterface *readerPlugin = qobject_cast<ReaderPluginInterface*>(plugin);
+    if(readerPlugin)
+    {
+        qDebug()<<"Printing suffix group";
+        QList<SuffixesStructure> suffixesListHelp = readerPlugin->getSuffixesGroups();
+        for(int i = 0; i < suffixesListHelp.size(); i++)
+        {
+            qDebug()<<suffixesListHelp.at(i).groupName;
+            qDebug()<<suffixesListHelp.at(i).suffixes;
+        }
+    }
 }

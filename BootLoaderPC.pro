@@ -22,7 +22,9 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     DmxBootProtocol.h \
     HexReader.h \
-    settingsdialog.h
+    settingsdialog.h \
+    interfaces/FlasherPluginInterface.h \
+    interfaces/ReaderPluginInterface.h
 
 OTHER_FILES += \
     doc/BootLoaderPC.qdocconf  \

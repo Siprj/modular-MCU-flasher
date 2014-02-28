@@ -7,12 +7,18 @@
 
 #include <DmxBootProtocol.h>
 #include <HexReader.h>
+#include <QMap>
+#include <QWidget>
+
+
+#include "interfaces/FlasherPluginInterface.h"
+#include "interfaces/ReaderPluginInterface.h"
 
 namespace Ui {
 class MainWindow;
 }
 
-
+class QPluginLoader;
 
 class MainWindow : public QMainWindow
 {
@@ -35,6 +41,9 @@ private slots:
     void on_pushButton_2_clicked();
 
 private:
+    void loadPlugins();
+    void publishPlugin(QObject *plugin);
+
     Ui::MainWindow *ui;
 
     SettingsDialog *settingDialog;
@@ -44,6 +53,12 @@ private:
     HexReader reader;
     quint32 readerSize;
     QByteArray array;
+
+    // <siffixes, reader plugin>
+    QMap<QString, QObject*> suffixesMap;
+    QStringList listOfSuffexesGroups;
+    // <wodget of plugin, flasher plugin>
+    QMap<QWidget*, QObject*> flasherMap;
 };
 
 #endif // MAINWINDOW_H

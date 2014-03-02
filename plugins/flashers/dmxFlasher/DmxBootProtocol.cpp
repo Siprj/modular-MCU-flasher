@@ -18,17 +18,23 @@
 #define SERIAL_FLOW_CONTROL QSerialPort::NoFlowControl
 
 #define WRITE_TIME_OUT 2000 //in ms
+#define READ_TIME_OUT 2000 //in ms
 
-DmxBootProtocol::DmxBootProtocol(QString portName, QObject *parent) :
+DmxBootProtocol::DmxBootProtocol(QObject *parent) :
     QObject(parent)
 {
     qDebug("DMX Boot Protocol Constructor");
     this->portName = portName;
     serialPort = new QSerialPort(this);
-    sendTimeoutTimer = new QTimer;
+
+    sendTimeoutTimer = new QTimer(this);
     sendTimeoutTimer->setSingleShot(true);
-    receiveTimeoutTimer = new QTimer;
+    sendTimeoutTimer->setInterval(WRITE_TIME_OUT);
+
+    receiveTimeoutTimer = new QTimer(this);
     receiveTimeoutTimer->setSingleShot(true);
+    receiveTimeoutTimer->setInterval(READ_TIME_OUT);
+    connect(receiveTimeoutTimer, SIGNAL(timeout()), this, SLOT(receiveTimeoutTimerTimeout()));
 
     dataSizeToWrite = 0;
     dataSizeWriten = 0;
@@ -56,8 +62,6 @@ DmxBootProtocol::~DmxBootProtocol()
     qDebug("DMX Boot Protocol Destructor");
     delete serialPort;
     delete stateMachine;
-    delete sendTimeoutTimer;
-    delete receiveTimeoutTimer;
 }
 
 void DmxBootProtocol::startBootSequence(QString portName, unsigned char deviceAddress, QByteArray dataToSend)
@@ -76,25 +80,10 @@ void DmxBootProtocol::startBootSequence(QString portName, unsigned char deviceAd
     stateMachine->start();
 }
 
-void DmxBootProtocol::testik(QString portName, unsigned char address)
+void DmxBootProtocol::startReceiveTimeoutTimer()
 {
-    deviceAddress = address;
-    this->portName = portName;
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(1);
-    testikPole.append(1);
-    testikPole.append(1);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    testikPole.append(0);
-    qDebug()<<"testikPole size: "<<testikPole.size();
+    qDebug()<<"Starting receive timeout Timer";
+    receiveTimeoutTimer->start();
 }
 
 int DmxBootProtocol::openPort()
@@ -143,20 +132,6 @@ char DmxBootProtocol::calculateCRC(QByteArray array, qint32 size)
     crc = (char)(0xFF - crc) + 1;
 
     qDebug()<<"Compiuted CRC is: "<<QString("%1").arg((int)crc, 0, 16);
-#ifdef TEST
-    if(testikPole.size() > 0)
-    {
-        static int y = 0;
-        if(testikPole.at(y))
-        {
-            qWarning()<<"CRC Testik PRACUJE !!!!!!!!!!!!";
-            crc += 2;
-        }
-        ++y;
-        if(y > testikPole.size())
-            y = 0;
-    }
-#endif
     return crc;
 }
 
@@ -164,7 +139,7 @@ void DmxBootProtocol::sendData(QByteArray array)
 {
     dataSizeWriten = 0;
     dataSizeToWrite = array.size();
-    sendTimeoutTimer->start(WRITE_TIME_OUT);        // will be stoped
+    sendTimeoutTimer->start();        // will be stoped
 
     if(sendErrorFlag)   // flag is se when we sending error respond
         --sendErrorFlag;        // value 2 means we are sending error mesage right now
@@ -172,6 +147,13 @@ void DmxBootProtocol::sendData(QByteArray array)
     qDebug()<<"Sending data: "<<array.toHex();
 
     serialPort->write(array);
+}
+
+qint32 DmxBootProtocol::progress()
+{
+    quint32 dataIndex = currentPageNumber*pageSize;
+    quint32 maxDataIndex = qMin(dataIndex+pageSize, (quint32)dataToSend.size());
+    return (100*((qreal)(maxDataIndex/dataToSend.size())));
 }
 
 void DmxBootProtocol::sendCRCError()    // TODO set seq numbers, check packet length
@@ -240,6 +222,8 @@ void DmxBootProtocol::dataReceived()
 
         if(toBeReceived == 0 && readState == ReadData)
         {
+            qDebug()<<"Stoping receive timeout timer";
+            receiveTimeoutTimer->stop();
             emit printProgressInfo(QString("Data readed: ")+readedData.toHex());
             qDebug()<<"All bytes of packet received";
             if(calculateCRC(readedData, readedData.size()) == byte)
@@ -300,6 +284,7 @@ void DmxBootProtocol::checkSendedDataSize(qint64 bytes)
         {
             sendTimeoutTimer->stop();       // Started in sendStartBootRequest() function
             emit packetSended();
+            emit progressInPercentage(progress());
         }
         else
         {
@@ -406,6 +391,7 @@ void DmxBootProtocol::resendBootData()      // TODO send CRCError or set flags f
 
 void DmxBootProtocol::resendBootEnd()
 {
+    qDebug()<<"Resend boot end";
     if(!sendErrorFlag || (sendErrorFlag && sendErrorSeq != readedData[0]))
     {
         --currentPageNumber;
@@ -415,23 +401,32 @@ void DmxBootProtocol::resendBootEnd()
         sendCRCError();
 }
 
+void DmxBootProtocol::receiveTimeoutTimerTimeout()
+{
+    qDebug()<<"Receive timeout read time timeouted";
+    emit noRespond();
+}
+
 void DmxBootProtocol::_DBPSuccess()
 {
     emit printProgressInfo("Flasing ended");
     qDebug()<<"Booting sucessfuly ended";
     serialPort->close();
+    emit done(true);
 }
 
 void DmxBootProtocol::_sendError()
 {
     qCritical()<<"Unable send data";
     serialPort->close();
+    emit done(false);
 }
 
 void DmxBootProtocol::_receiveTimeout()
 {
     qCritical()<<"Device is not responding";
     serialPort->close();
+    emit done(false);
 }
 
 void DmxBootProtocol::createStateMachine()
@@ -439,10 +434,8 @@ void DmxBootProtocol::createStateMachine()
     stateMachine = new QStateMachine;
     QState *startBootState = new QState;
     QState *receiveBootStartRespondSatate = new QState;
-    QState *unableSendDataState = new QState;
     QState *sendBootDataState = new QState;
     QState *sendErrorReceiveBootEnterRespondState = new QState;
-    QState *noDeviceRespondState = new QState;
     QState *receiveDataRespondState = new QState;
     QState *sendErrorReceiveDataRespondState  = new QState;
     QState *resendBootDateState = new QState;
@@ -457,56 +450,59 @@ void DmxBootProtocol::createStateMachine()
     // Send Start Boot Start
     connect(startBootState, SIGNAL(entered()), this, SLOT(sendStartBootRequest()));        //state machine is started from startBootSequence
     startBootState->addTransition(this, SIGNAL(packetSended()), receiveBootStartRespondSatate);
-    startBootState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    startBootState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Send Start Boot End
 
     // Receive Boot Enter Respond Start
+    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
     receiveBootStartRespondSatate->addTransition(this, SIGNAL(bootEnteredRespondReceived()), sendBootDataState);
     receiveBootStartRespondSatate->addTransition(this, SIGNAL(CRCCalculateError()), sendErrorReceiveBootEnterRespondState);
     receiveBootStartRespondSatate->addTransition(this ,SIGNAL(receiveCRCError()), sendErrorReceiveBootEnterRespondState);
-    receiveBootStartRespondSatate->addTransition(this, SIGNAL(noRespond()), noDeviceRespondState);
+    receiveBootStartRespondSatate->addTransition(this, SIGNAL(noRespond()), noDeviceRespondFinalState);
     connect(receiveBootStartRespondSatate, SIGNAL(exited()), this, SLOT(storePageSize()));
     // Receive Boot Enter Respond End
 
     // Receive Send Error Boot Enter Respond Start
     connect(sendErrorReceiveBootEnterRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()));
     sendErrorReceiveBootEnterRespondState->addTransition(this, SIGNAL(CRCErrorSended()), receiveBootStartRespondSatate);
-    sendErrorReceiveBootEnterRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    sendErrorReceiveBootEnterRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Receive Send Error Boot Enter Respond End
 
     // Send Boot Data Start
     connect(sendBootDataState, SIGNAL(entered()), this, SLOT(sendBootData()));
     sendBootDataState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
-    sendBootDataState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    sendBootDataState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendBootDataState->addTransition(this ,SIGNAL(allDataSended()), sendBootEndState);
     // Send Boot Data End
 
     // Receive Respond ACK/ERROR (receiveDataRespondState) Start
-    connect(resendBootDateState, SIGNAL(entered()), this, SLOT(resendBootData()));
+    connect(receiveDataRespondState, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
     receiveDataRespondState->addTransition(this ,SIGNAL(CRCCalculateError()), sendErrorReceiveDataRespondState);
     receiveDataRespondState->addTransition(this, SIGNAL(receiveACK()), sendBootDataState);
     receiveDataRespondState->addTransition(this ,SIGNAL(receiveCRCError()), resendBootDateState);
-    receiveDataRespondState->addTransition(this, SIGNAL(noRespond()), noDeviceRespondState);
+    receiveDataRespondState->addTransition(this, SIGNAL(noRespond()), noDeviceRespondFinalState);
     // Receive Respond ACK/ERROR (receiveDataRespondState) End
 
     // Send Error Receive Data Respond Sate Start
     connect(sendErrorReceiveDataRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()));
     sendErrorReceiveDataRespondState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
-    sendErrorReceiveDataRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    sendErrorReceiveDataRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Send Error Receive Data Respond Sate End
 
     // Resend Boot Data Start
+    connect(resendBootDateState, SIGNAL(entered()), this, SLOT(resendBootData()));
     resendBootDateState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
-    resendBootDateState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    resendBootDateState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Resend Boot Data End
 
     // Send Boot End Start
     connect(sendBootEndState, SIGNAL(entered()), this, SLOT(sendBootEnd()));
-    sendBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    sendBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendBootEndState->addTransition(this, SIGNAL(packetSended()), receiveBootEndRespondState);
     // Send Boot End End
 
     // Receive Respond ACK/ERROR Star
+    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
     receiveBootEndRespondState->addTransition(this, SIGNAL(CRCCalculateError()), sendBootEndState);
     receiveBootEndRespondState->addTransition(this, SIGNAL(receiveCRCError()), sendErrorreceiveRespondBootEndState);
     receiveBootEndRespondState->addTransition(this, SIGNAL(receiveACK()), regularFinalState);
@@ -514,7 +510,7 @@ void DmxBootProtocol::createStateMachine()
 
     // Send Error Receive Respond Boot End State Start
     connect(sendErrorreceiveRespondBootEndState, SIGNAL(entered()), this, SLOT(resendBootEnd()));
-    sendErrorreceiveRespondBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataState);
+    sendErrorreceiveRespondBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendErrorreceiveRespondBootEndState->addTransition(this, SIGNAL(packetSended()), receiveBootEndRespondState);
     // Send Error Receive Respond Boot End State End
 
@@ -534,10 +530,8 @@ void DmxBootProtocol::createStateMachine()
     // put all states in to machine
     stateMachine->addState(startBootState);
     stateMachine->addState(receiveBootStartRespondSatate);
-    stateMachine->addState(unableSendDataState);
     stateMachine->addState(sendBootDataState);
     stateMachine->addState(sendErrorReceiveBootEnterRespondState);
-    stateMachine->addState(noDeviceRespondState);
     stateMachine->addState(receiveDataRespondState);
     stateMachine->addState(sendErrorReceiveDataRespondState);
     stateMachine->addState(resendBootDateState);

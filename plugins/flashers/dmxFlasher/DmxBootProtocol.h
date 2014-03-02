@@ -7,10 +7,6 @@
 
 #include <QTimer>
 
-#include <HexReader.h>
-
-#include <settingsdialog.h>
-
 #include <QStateMachine>
 
 class QStateMachine;
@@ -19,7 +15,7 @@ class DmxBootProtocol : public QObject
 {
     Q_OBJECT
 public:
-    explicit DmxBootProtocol(QString portName = QString("portName"), QObject *parent = 0);
+    explicit DmxBootProtocol(QObject *parent = 0);
     ~DmxBootProtocol();
 
     enum Errors{
@@ -44,7 +40,9 @@ public:
     };
 
 signals:
+    void done(bool success);
     void printProgressInfo(QString text);
+    void progressInPercentage(qint32 percentage);
 
     // DmxBootProtocol
     void bootEnteredRespondReceived();
@@ -65,9 +63,9 @@ signals:
     
 public slots:
     void startBootSequence(QString portName, unsigned char deviceAddress, QByteArray dataToSend);
-    void testik(QString portName, unsigned char address);
 
 private slots:
+    void startReceiveTimeoutTimer();
     void dataReceived();        // privately used for receive data from serial port
     void handleSerialError(QSerialPort::SerialPortError error);
 
@@ -84,6 +82,8 @@ private slots:
     void resendBootData();
     void resendBootEnd();
 
+    void receiveTimeoutTimerTimeout();
+
     //! internal slots used by state machine
 
     // DBP state machine ended secesfully
@@ -98,6 +98,7 @@ private:
     int openPort();
     char calculateCRC(QByteArray array, qint32 size);
     void sendData(QByteArray array);
+    qint32 progress();
 
     QString portName;
     qint8 deviceAddress;
@@ -127,9 +128,6 @@ private:
     qint64 dataSizeWriten;
 
     int pokus;
-
-    QList<bool> testikPole;
-
 //    QTimer *timer;
 };
 

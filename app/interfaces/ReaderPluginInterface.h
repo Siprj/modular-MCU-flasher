@@ -2,6 +2,7 @@
 #define READERPLUGININTERFACE_H
 
 #include <QtPlugin>
+#include <QStringList>
 
 QT_BEGIN_NAMESPACE
 class QString;
@@ -20,12 +21,20 @@ class ReaderPluginInterface : public QObject
 {
 public:
     virtual ~ReaderPluginInterface() {}
-    virtual quint32 readData(QString fileName) = 0;
+
+    /**
+     * \brief Function readData starts asynchronous read implemented by plugin. If the read is not short it can be synchronous but it is not recomended.
+     * \warning Main app is counting that the function readData is not blocking!!!!
+     * \note Plugins shoul emit done(QByteArray data) signal when is finishes and if seome error ocure it shoul put empty array in to th signal.
+     * \param fileName - file which is to be readed by plugin.
+     *
+     */
+    virtual void readData(QString fileName) = 0;
     virtual QList<SuffixesStructure> getSuffixesGroups() = 0;
 
 signals:
     virtual void printProgressInfo(QString info) = 0;
-    virtual void progressInPercentage(float progress) = 0;
+    virtual void progressInPercentage(qint32 progress) = 0;
     virtual void done(QByteArray data) = 0;
 };
 

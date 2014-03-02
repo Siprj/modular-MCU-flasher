@@ -1,5 +1,5 @@
-#ifndef HEXREADER_H
-#define HEXREADER_H
+#ifndef HEXREADERCORE_H
+#define HEXREADERCORE_H
 
 #include <fstream>
 #include <string>
@@ -10,10 +10,10 @@
 
 using namespace std;
 
-class HexReader
+class HexReaderCore
 {
 public:
-    HexReader();
+    HexReaderCore();
 
     int open(const char *fileName);
     unsigned int getDataSize();
@@ -41,7 +41,7 @@ private:
         unsigned char c;
     }Record;
 
-    Record* findBlock(int address);
+    Record* findBlock(unsigned int address);
     static bool compareAddress(Record* first, Record* second);
     list<Record*> dataList;
 

@@ -3,10 +3,6 @@
 
 #include <QMainWindow>
 
-#include <settingsdialog.h>
-
-#include <DmxBootProtocol.h>
-#include <HexReader.h>
 #include <QMap>
 #include <QWidget>
 
@@ -24,41 +20,50 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    enum FlashinSate{
+        ReadingDataState = 0,
+        FlashingDeviceState = 1,
+        NumberOfStates
+    };
+
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
 public slots:
-    void printDebugInfo(QString text);
+    void printProgressInfo(QString text);
 
 private slots:
     void on_actionOpen_File_triggered();
+    void on_flashButton_clicked();
 
-    void on_pushButton_clicked();
-
-    void on_bootPushButton_clicked();
-
-    void on_pushButton_2_clicked();
+    void done(QByteArray data);        // finish slot for Reder Plugins
+    void done(bool success);                        // finish slot for Flashing Plugins
+    void progressInPercentage(qint32 percentageProgress);
 
 private:
     void loadPlugins();
-    void publishPlugin(QObject *plugin);
+    void publishPlugin(QObject *plugin, QStringList &composedGroupSuffixesList);
+    void unknownFileSuffixMssage();
+    void noFileSelected();
 
     Ui::MainWindow *ui;
 
-    SettingsDialog *settingDialog;
+    QByteArray dataArray;
 
-    DmxBootProtocol dmxBootProtocol;
-
-    HexReader reader;
-    quint32 readerSize;
-    QByteArray array;
-
-    // <siffixes, reader plugin>
-    QMap<QString, QObject*> suffixesMap;
     QStringList listOfSuffexesGroups;
     // <wodget of plugin, flasher plugin>
     QMap<QWidget*, QObject*> flasherMap;
+    QString suffixesFilters;
+
+    QString fileToRead;
+
+    // <siffixes, reader plugin>
+    QMap<QString, QObject*> readersSuffixesMap;
+    ReaderPluginInterface *currentReader;
+    FlasherPluginInterface *currentFlasher;
+
+    FlashinSate flashingState;
 };
 
 #endif // MAINWINDOW_H

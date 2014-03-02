@@ -7,7 +7,7 @@ interface FlasherPlugin {
     -- 
     signals:
     + {abstract} printProgressInfo(QString info) : void
-    + {abstract} progressInPercentage(float progress) : void
+    + {abstract} progressInPercentage(qint32 progress) : void
     + {abstract} done() : void
 }
 
@@ -18,7 +18,7 @@ interface ReaderPlugin {
     -- 
     signals:
     + {abstract} printProgressInfo(QString info) : void
-    + {abstract} progressInPercentage(float progress) : void
+    + {abstract} progressInPercentage(qint32 progress) : void
     + {abstract} done(QByteArray data) : void
 }
 

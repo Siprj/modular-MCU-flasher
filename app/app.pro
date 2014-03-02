@@ -13,16 +13,10 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
-    DmxBootProtocol.cpp \
-    HexReader.cpp \
-    settingsdialog.cpp
+        mainwindow.cpp
 
 
 HEADERS  += mainwindow.h \
-    DmxBootProtocol.h \
-    HexReader.h \
-    settingsdialog.h \
     interfaces/FlasherPluginInterface.h \
     interfaces/ReaderPluginInterface.h
 
@@ -36,9 +30,10 @@ OTHER_FILES += \
     doc/compat.qdocconf \
     doc/docSrc/main.qdoc
 
-FORMS    += mainwindow.ui \
-    settingsdialog.ui
+FORMS    += mainwindow.ui
 
 DEFINES += TEST
 
 RESOURCES += resource.qrc
+
+DESTDIR = ../complete/

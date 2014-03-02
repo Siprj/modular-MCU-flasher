@@ -9,34 +9,25 @@
 
 #include <QDebug>
 #include <QPluginLoader>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->progressBar->setVisible(false);
 
     loadPlugins();
 
-    settingDialog = new SettingsDialog;
+    currentReader = NULL;
+    currentFlasher = NULL;
+
+    flashingState = ReadingDataState;
 
     connect(ui->actionAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
-
-//    QWidget *widget = new QWidget;
-//    QLabel *label = new QLabel("blabla");
-//    QGridLayout *grid = new QGridLayout;
-//    grid->addWidget(label);
-//    widget->setLayout(grid);
-//    ui->statusBar->addPermanentWidget(widget);
-
-//    QWidget *widget2 = new QWidget;
-//    QLabel *label2 = new QLabel("blabla 22222");
-//    QGridLayout *grid2 = new QGridLayout;
-//    grid2->addWidget(label2);
-//    widget2->setLayout(grid2);
-//    ui->statusBar->addPermanentWidget(widget2);
-//    ui->statusBar->showMessage("blablaasasdfasdf ");
-    connect(&dmxBootProtocol, SIGNAL(printProgressInfo(QString)), this, SLOT(printDebugInfo(QString)));
+    connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_flashButton_clicked()));
+    connect(ui->openFilePushButton, SIGNAL(clicked()), this, SLOT(on_actionOpen_File_triggered()));
 }
 
 MainWindow::~MainWindow()
@@ -44,49 +35,27 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::printDebugInfo(QString text)
+void MainWindow::printProgressInfo(QString text)
 {
-    //ui->debugInfoTextEdit->appendPlainText(text+"\n");
+    qDebug()<<"Printing progress info message i tu status bar: "<<text;
+    ui->statusBar->showMessage(text, 10000);
 }
 
 void MainWindow::on_actionOpen_File_triggered()
 {
-    QString name = QFileDialog::getOpenFileName(this, "Hex File", "Z:\\Yrid\\elektro\\ATmega8 soutez adc\\ATmega8 soutez adc\\Debug", tr("Hex (*.hex)"));
-
-    if(reader.isOpen())
-        reader.close();
-    if(!name.isEmpty())
+    currentReader = NULL;
+    fileToRead = QFileDialog::getOpenFileName(this, "Hex File", "Z:\\Yrid\\elektro\\ATmega8 soutez adc\\ATmega8 soutez adc\\Debug", suffixesFilters);
+    qDebug()<<"File to open"<<fileToRead;
+    QFileInfo fileInfo(fileToRead);
+    ui->openFileLineEdit->setText(fileToRead);
+    if(readersSuffixesMap.contains(fileInfo.suffix()))
     {
-        if(reader.open(name.toStdString().c_str()))
-        {
-            qDebug()<<"File is opened";
-        }
-
-
-
-        readerSize = reader.readHex();
-        array.clear();
-        char pole[500000];
-        reader.getData(0, qMin((quint32)50000, readerSize), pole);
-        array.append(pole, readerSize);
+        currentReader = qobject_cast<ReaderPluginInterface*>(readersSuffixesMap[fileInfo.suffix()]);
     }
-}
+    else
+        unknownFileSuffixMssage();
 
-void MainWindow::on_pushButton_clicked()
-{
-    settingDialog->show();
-}
-
-void MainWindow::on_bootPushButton_clicked()
-{
-//    dmxBootProtocol.open(settingDialog);
-
-}
-
-void MainWindow::on_pushButton_2_clicked()
-{
-    dmxBootProtocol.startBootSequence(settingDialog->settings().name, 0xE0, array/*QByteArray("Asdfasdfasdfasdf")*/);
-    //    dmxBootProtocol.send();
+    qDebug()<<"currentReader: "<<currentReader;
 }
 
 void MainWindow::loadPlugins()
@@ -98,6 +67,9 @@ void MainWindow::loadPlugins()
 
     qDebug()<<"Try to load plugins in folder "<<pluginsDir.path();
 
+    QStringList composedGroupSuffixesList;          // Suffixes filters
+    composedGroupSuffixesList.append("All (*)");    // Add filter for all files
+
     foreach(QString fileName, pluginsDir.entryList(QDir::Files))
     {
         qDebug()<<"Testing: "<<pluginsDir.absoluteFilePath(fileName);
@@ -107,7 +79,7 @@ void MainWindow::loadPlugins()
         {
             qDebug()<<"Loading: "<<fileName;
             // load
-            publishPlugin(plugin);
+            publishPlugin(plugin, composedGroupSuffixesList);
         }
         else
         {
@@ -116,15 +88,22 @@ void MainWindow::loadPlugins()
         }
     }
 
+    composedGroupSuffixesList.sort();
+    suffixesFilters = composedGroupSuffixesList.join(";;"); // compose all filter in to one string
+
+
+
     qDebug()<<"Loadnig of plugins completed";
 }
 
-void MainWindow::publishPlugin(QObject *plugin)
+void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffixesList)
 {
     FlasherPluginInterface *flasherPlugin = qobject_cast<FlasherPluginInterface*>(plugin);
     if(flasherPlugin)
     {
-
+        connect(flasherPlugin, SIGNAL(done(bool)), this, SLOT(done(bool)), Qt::QueuedConnection);
+        connect(flasherPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
+        connect(flasherPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
         QWidget *widget = flasherPlugin->getPluginWidget();
         ui->flashingTabWidget->addTab(widget, widget->windowTitle());
         flasherMap[widget] = plugin;
@@ -133,12 +112,92 @@ void MainWindow::publishPlugin(QObject *plugin)
     ReaderPluginInterface *readerPlugin = qobject_cast<ReaderPluginInterface*>(plugin);
     if(readerPlugin)
     {
+        connect(readerPlugin, SIGNAL(done(QByteArray)), this, SLOT(done(QByteArray)), Qt::QueuedConnection);
+        connect(readerPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
+        connect(readerPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
         qDebug()<<"Printing suffix group";
         QList<SuffixesStructure> suffixesListHelp = readerPlugin->getSuffixesGroups();
         for(int i = 0; i < suffixesListHelp.size(); i++)
         {
+            for(int y = 0; y < suffixesListHelp.at(i).suffixes.size(); y++)
+            {
+                const QString removeWildCard = QString("*.");
+                QString messUpSuffix = suffixesListHelp.at(i).suffixes.at(y);
+                QString suffix = messUpSuffix.remove(removeWildCard);
+                readersSuffixesMap[suffix] = plugin;
+            }
+            QString groupeSuffixes;
+            groupeSuffixes.append(suffixesListHelp.at(i).groupName).append(" (");
+            groupeSuffixes.append(suffixesListHelp.at(i).suffixes.join(" ")).append(")");
+            composedGroupSuffixesList.append(groupeSuffixes);
+
             qDebug()<<suffixesListHelp.at(i).groupName;
             qDebug()<<suffixesListHelp.at(i).suffixes;
         }
     }
+}
+
+void MainWindow::unknownFileSuffixMssage()
+{
+    QMessageBox::warning(this, tr("Unknown file format"), tr("Unknown file format"));
+}
+
+void MainWindow::noFileSelected()
+{
+    QMessageBox::warning(this, tr("No file selected"), tr("You mast select some file first"));
+}
+
+void MainWindow::on_flashButton_clicked()
+{
+    if(currentReader)
+    {
+        ui->progressBar->setVisible(true);
+        ui->progressBar->setValue(0);
+        repaint();
+        currentReader->readData(fileToRead);
+        currentFlasher = qobject_cast<FlasherPluginInterface*>(flasherMap[ui->flashingTabWidget->currentWidget()]);
+    }
+    else
+        noFileSelected();
+}
+
+void MainWindow::done(QByteArray data)
+{
+    flashingState = FlashingDeviceState;
+    dataArray = data;
+    qDebug()<<"Reading plugin finished";
+    if(dataArray.isEmpty())
+    {
+        ui->progressBar->setVisible(false);
+        QMessageBox::warning(this, "File Read Error", "Couldn't read file. Prabelby wrong format");
+        qCritical()<<"No data readed, read plugin faild";
+    }
+    else
+    {
+        qDebug()<<"Readed data: "<<dataArray.toHex();
+        qDebug()<<"Starting flashing";
+        currentFlasher->flash(dataArray);
+    }
+}
+
+void MainWindow::done(bool success)
+{
+    if(success)
+        QMessageBox::information(this, tr("Flasnig completed"), tr("Flasnig completed"));
+    else
+    {
+        QMessageBox::warning(this, tr("Flashing failed"), tr("Flashing faild"));
+    }
+    ui->progressBar->setVisible(false);
+
+    flashingState = ReadingDataState;
+}
+
+void MainWindow::progressInPercentage(qint32 percentageProgress)
+{
+    qreal percentagePerSate = 100/NumberOfStates;
+    qreal percentagPase = percentagePerSate*flashingState;
+    qreal currentStateProgress = (percentagePerSate/100)*percentageProgress;
+    ui->progressBar->setValue(percentagPase+currentStateProgress);
+    qDebug()<<"PROGRESS: "<<(qint32)percentagPase+currentStateProgress<<"% !!!!!!";
 }

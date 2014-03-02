@@ -9,14 +9,11 @@ QT       += widgets
 TARGET = hexReader
 TEMPLATE = lib
 
-DEFINES += HEXREADER_LIBRARY
+SOURCES += hexreader.cpp \
+    hexReaderCore.cpp
 
-SOURCES += hexreader.cpp
+HEADERS += hexreader.h \
+    globalStatic.h \
+    hexReaderCore.h
 
-HEADERS += hexreader.h\
-        hexreader_global.h
-
-unix {
-    target.path = /usr/lib
-    INSTALLS += target
-}
+DESTDIR = ../../../complete/plugins

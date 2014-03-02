@@ -16,7 +16,7 @@ void initLogger()
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    initLogger();
+    //initLogger();
     a.setWindowIcon(QIcon(":/ico/img/programicon.png"));
     MainWindow w;
     w.show();

@@ -21,8 +21,8 @@ public:
 
 signals:
     virtual void printProgressInfo(QString info) = 0;
-    virtual void progressInPercentage(float progress) = 0;
-    virtual void done() = 0;
+    virtual void progressInPercentage(qint32 progress) = 0;
+    virtual void done(bool success) = 0;
 };
 
 Q_DECLARE_INTERFACE(FlasherPluginInterface, "BootLoader.FlasherPluginInterface-1.0");

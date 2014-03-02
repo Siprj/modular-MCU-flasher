@@ -1,17 +1,17 @@
-#include "HexReader.h"
+#include "hexReaderCore.h"
 
-HexReader::HexReader()
+HexReaderCore::HexReaderCore()
 {
     dataSize = 0;
 }
 
-int HexReader::open(const char *fileName)
+int HexReaderCore::open(const char *fileName)
 {
     file.open(fileName);
     return file.is_open();
 }
 
-bool HexReader::compareAddress(Record* first, Record* second)
+bool HexReaderCore::compareAddress(Record* first, Record* second)
 {
     if (first->address<second->address)
         return true;
@@ -19,7 +19,7 @@ bool HexReader::compareAddress(Record* first, Record* second)
         return false;
 }
 
-HexReader::Record *HexReader::findBlock(int address)
+HexReaderCore::Record *HexReaderCore::findBlock(unsigned int address)
 {
     for(list<Record*>::iterator it = dataList.begin(); it != dataList.end(); it++)
     {
@@ -30,7 +30,7 @@ HexReader::Record *HexReader::findBlock(int address)
 }
 
 
-unsigned int HexReader::readHex()
+unsigned int HexReaderCore::readHex()
 {
     char line[50];
     int dataLen;
@@ -131,7 +131,7 @@ unsigned int HexReader::readHex()
     return dataSize;
 }
 
-unsigned int HexReader::HexToInt(char *str, int length)
+unsigned int HexReaderCore::HexToInt(char *str, int length)
 {
     unsigned int val;
     stringstream stream;
@@ -140,7 +140,7 @@ unsigned int HexReader::HexToInt(char *str, int length)
     return val;
 }
 
-unsigned char HexReader::crcCalculate(char* str, int length)
+unsigned char HexReaderCore::crcCalculate(char* str, int length)
 {
     unsigned char crc = 0;
     for(int i = 0; i < length; i+=2)
@@ -151,12 +151,12 @@ unsigned char HexReader::crcCalculate(char* str, int length)
 }
 
 
-string HexReader::getErrorStr()
+string HexReaderCore::getErrorStr()
 {
     return errorStr;
 }
 
-void HexReader::printAll()
+void HexReaderCore::printAll()
 {
     cout<<"vypis"<<endl;
     int i =0;
@@ -176,12 +176,12 @@ void HexReader::printAll()
     cout<<endl<<"vypis konec"<<endl;
 }
 
-unsigned int HexReader::getDataSize()
+unsigned int HexReaderCore::getDataSize()
 {
     return dataSize;
 }
 
-int HexReader::getData(unsigned int addr, int maxSize, char* data)
+int HexReaderCore::getData(unsigned int addr, int maxSize, char* data)
 {
     list<Record*>::iterator it = dataList.begin();
     for(; (*it)->address != addr; it++)
@@ -195,7 +195,7 @@ int HexReader::getData(unsigned int addr, int maxSize, char* data)
     return 0;
 }
 
-void HexReader::close()
+void HexReaderCore::close()
 {
     file.close();
     for(list<Record*>::iterator it = dataList.begin(); it != dataList.end(); it++)
@@ -205,7 +205,7 @@ void HexReader::close()
     dataList.clear();
 }
 
-int HexReader::isOpen()
+int HexReaderCore::isOpen()
 {
     return file.is_open();
 }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>394</width>
+    <height>315</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,19 +15,49 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>File to flash:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="openFileLineEdit">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="openFilePushButton">
+        <property name="text">
+         <string>Open</string>
+        </property>
+        <property name="icon">
+         <iconset resource="resource.qrc">
+          <normaloff>:/menu/img/fileopen.png</normaloff>:/menu/img/fileopen.png</iconset>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="QTabWidget" name="flashingTabWidget"/>
+    </item>
     <item row="3" column="0">
-     <widget class="QTabWidget" name="flashingTabWidget">
-      <property name="currentIndex">
+     <widget class="QProgressBar" name="progressBar">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="value">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="tab_1">
-       <attribute name="title">
-        <string>Tab 1</string>
-       </attribute>
-      </widget>
      </widget>
     </item>
-    <item row="5" column="0">
+    <item row="4" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <spacer name="horizontalSpacer">
@@ -43,16 +73,9 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="applyButton">
+       <widget class="QPushButton" name="flashButton">
         <property name="text">
-         <string>&amp;Apply</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="cancelButton_2">
-        <property name="text">
-         <string>&amp;Cancel</string>
+         <string>Flash</string>
         </property>
        </widget>
       </item>
@@ -65,8 +88,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
-     <height>20</height>
+     <width>394</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

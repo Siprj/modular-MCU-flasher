@@ -19,7 +19,8 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     interfaces/FlasherPluginInterface.h \
     interfaces/ReaderPluginInterface.h \
-    interfaces/trace.h
+    interfaces/trace.h \
+    interfaces/BaseInterface.h
 
 OTHER_FILES += \
     doc/BootLoaderPC.qdocconf  \

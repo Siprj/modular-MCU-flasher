@@ -10,6 +10,7 @@
 #include "interfaces/trace.h"
 #include "interfaces/FlasherPluginInterface.h"
 #include "interfaces/ReaderPluginInterface.h"
+#include "interfaces/BaseInterface.h"
 
 namespace Ui {
 class MainWindow;

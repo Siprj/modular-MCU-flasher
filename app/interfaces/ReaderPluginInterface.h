@@ -1,7 +1,7 @@
 #ifndef READERPLUGININTERFACE_H
 #define READERPLUGININTERFACE_H
 
-#include <QtPlugin>
+#include "BaseInterface.h"
 #include <QStringList>
 
 QT_BEGIN_NAMESPACE
@@ -11,25 +11,13 @@ class QObject;
 class QByteArray;
 QT_END_NAMESPACE
 
-#ifndef MESSAGE_BOX_WARNING
-#define MESSAGE_BOX_WARNING         0
-#endif
-
-#ifndef MESSAGE_BOX_INFORMATION
-#define MESSAGE_BOX_INFORMATION     1
-#endif
-
-#ifndef MESSAGE_BOX_CRITICIAL
-#define MESSAGE_BOX_CRITICIAL       2
-#endif
-
 typedef struct
 {
     QString groupName;
     QStringList suffixes;
 }SuffixesStructure;
 
-class ReaderPluginInterface : public QObject
+class ReaderPluginInterface : public BaseInterface
 {
 public:
     virtual ~ReaderPluginInterface() {}
@@ -45,9 +33,6 @@ public:
     virtual QList<SuffixesStructure> getSuffixesGroups() = 0;
 
 signals:
-    virtual void showMessageBox(QString title, QString text, qint32 type) = 0;
-    virtual void printProgressInfo(QString info) = 0;
-    virtual void progressInPercentage(qint32 progress) = 0;
     virtual void done(QByteArray data) = 0;
 };
 

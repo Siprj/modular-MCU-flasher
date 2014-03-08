@@ -104,25 +104,29 @@ void MainWindow::loadPlugins()
 void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffixesList)
 {
     FUNCTION_ENTER_TRACE;
-    FlasherPluginInterface *flasherPlugin = qobject_cast<FlasherPluginInterface*>(plugin);
+    BaseInterface *basicInterface = dynamic_cast<BaseInterface*>(plugin);
+    if(basicInterface)
+    {
+        qDebug()<<"plugins is derivated from BaseInterface";
+        connect(basicInterface, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
+        connect(basicInterface, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
+        connect(basicInterface, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
+    }
+
+
+    FlasherPluginInterface *flasherPlugin = dynamic_cast<FlasherPluginInterface*>(plugin);
     if(flasherPlugin)
     {
         connect(flasherPlugin, SIGNAL(done(bool)), this, SLOT(done(bool)), Qt::QueuedConnection);
-        connect(flasherPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
-        connect(flasherPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
-        connect(flasherPlugin, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
         QWidget *widget = flasherPlugin->getPluginWidget();
         ui->flashingTabWidget->addTab(widget, widget->windowTitle());
         flasherMap[widget] = plugin;
     }
 
-    ReaderPluginInterface *readerPlugin = qobject_cast<ReaderPluginInterface*>(plugin);
+    ReaderPluginInterface *readerPlugin = dynamic_cast<ReaderPluginInterface*>(plugin);
     if(readerPlugin)
     {
         connect(readerPlugin, SIGNAL(done(QByteArray)), this, SLOT(done(QByteArray)), Qt::QueuedConnection);
-        connect(readerPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
-        connect(readerPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
-        connect(flasherPlugin, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
         qDebug()<<"Printing suffix group";
         QList<SuffixesStructure> suffixesListHelp = readerPlugin->getSuffixesGroups();
         for(int i = 0; i < suffixesListHelp.size(); i++)

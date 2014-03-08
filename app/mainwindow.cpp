@@ -117,6 +117,7 @@ void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffix
     FlasherPluginInterface *flasherPlugin = dynamic_cast<FlasherPluginInterface*>(plugin);
     if(flasherPlugin)
     {
+        qDebug()<<"plugins is derivated from FlasherPluginInterface";
         connect(flasherPlugin, SIGNAL(done(bool)), this, SLOT(done(bool)), Qt::QueuedConnection);
         QWidget *widget = flasherPlugin->getPluginWidget();
         ui->flashingTabWidget->addTab(widget, widget->windowTitle());
@@ -126,7 +127,10 @@ void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffix
     ReaderPluginInterface *readerPlugin = dynamic_cast<ReaderPluginInterface*>(plugin);
     if(readerPlugin)
     {
+        qDebug()<<"plugins is derivated from ReaderPluginInterface";
+
         connect(readerPlugin, SIGNAL(done(QByteArray)), this, SLOT(done(QByteArray)), Qt::QueuedConnection);
+
         qDebug()<<"Printing suffix group";
         QList<SuffixesStructure> suffixesListHelp = readerPlugin->getSuffixesGroups();
         for(int i = 0; i < suffixesListHelp.size(); i++)
@@ -221,6 +225,7 @@ void MainWindow::progressInPercentage(qint32 percentageProgress)
 
 void MainWindow::showMessageBox(QString title, QString text, qint32 type)
 {
+    FUNCTION_ENTER_TRACE;
     switch(type)
     {
     case MESSAGE_BOX_CRITICIAL:

@@ -27,8 +27,10 @@ public:
     int isOpen();
 
 private:
-    std::ifstream file;
+    ifstream file;
     unsigned int dataSize;
+
+    string trim(string &str);
 
     string errorStr;
 

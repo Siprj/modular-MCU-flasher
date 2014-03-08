@@ -6,6 +6,7 @@
 
 QT       += widgets
 
+
 TARGET = hexReader
 TEMPLATE = lib
 
@@ -15,5 +16,8 @@ SOURCES += hexreader.cpp \
 HEADERS += hexreader.h \
     globalStatic.h \
     hexReaderCore.h
+
+DEFINES += \
+#        TRACE_FUNCTION_CALLS
 
 DESTDIR = ../../../complete/plugins

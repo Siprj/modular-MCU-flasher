@@ -17,9 +17,15 @@
 #include "widgetwithnotifi.h"
 #include "DmxBootProtocol.h"
 
+#include "../../../app/interfaces/trace.h"
+
 DmxFlasher::DmxFlasher():
     ui(new Ui::DmxFlasher)
 {
+    FUNCTION_ENTER_TRACE;
+
+    qRegisterMetaType<DmxBootProtocol::Errors>("DmxBootProtocol::Errors");
+
     dmxFlasherWidget = new WidgetWithNotifi;
     ui->setupUi(dmxFlasherWidget);
     connect(dmxFlasherWidget, SIGNAL(widgetVisibilityChanged(bool)), this, SLOT(showWidgetVisiblityChanget(bool)), Qt::QueuedConnection);
@@ -38,6 +44,7 @@ DmxFlasher::DmxFlasher():
     connect(dmxBootProtocol, SIGNAL(done(bool)), this, SLOT(DmxBootProtocolDoneSlot(bool)), Qt::QueuedConnection);
     connect(dmxBootProtocol, SIGNAL(printProgressInfo(QString)), this, SLOT(DmxBootPrintProgressInfoSlot(QString)), Qt::QueuedConnection);
     connect(dmxBootProtocol, SIGNAL(progressInPercentage(qint32)), this, SLOT(DmxBootProgressInPercentageSlot(qint32)), Qt::QueuedConnection);
+    connect(dmxBootProtocol, SIGNAL(errorOcured(DmxBootProtocol::Errors)), this, SLOT(DmxBootProtocolErrorOcured(DmxBootProtocol::Errors)), Qt::QueuedConnection);
     connect(this, SIGNAL(startFlashing(QString,unsigned char,QByteArray)), dmxBootProtocol, SLOT(startBootSequence(QString,unsigned char,QByteArray)), Qt::QueuedConnection);
 
     moveToThread(thread);
@@ -45,17 +52,20 @@ DmxFlasher::DmxFlasher():
 
 DmxFlasher::~DmxFlasher()
 {
+    FUNCTION_ENTER_TRACE;
     delete ui;
     delete thread;
 }
 
 QWidget *DmxFlasher::getPluginWidget()
 {
+    FUNCTION_ENTER_TRACE;
     return dmxFlasherWidget;
 }
 
 void DmxFlasher::refreshSerials()
 {
+    FUNCTION_ENTER_TRACE;
     QString tmpSerialPortName;
     qDebug()<<"Refreshing serial port list";
     if(ui->serialPortComboBox->currentIndex() != -1)
@@ -84,6 +94,7 @@ void DmxFlasher::refreshSerials()
 
 void DmxFlasher::showWidgetVisiblityChanget(bool isVisible)
 {
+    FUNCTION_ENTER_TRACE;
     if(isVisible)
     {
         qDebug()<<"Starting refresh timer";
@@ -99,6 +110,7 @@ void DmxFlasher::showWidgetVisiblityChanget(bool isVisible)
 
 void DmxFlasher::serialComboboxExpanded(bool isExpanded)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"ComboBox expanded: "<<isExpanded;
     if(isExpanded)
     {
@@ -114,6 +126,7 @@ void DmxFlasher::serialComboboxExpanded(bool isExpanded)
 
 void DmxFlasher::showPortInfo(qint32 index)
 {
+    FUNCTION_ENTER_TRACE;
     if (index != -1) {
         QStringList list = ui->serialPortComboBox->itemData(index).toStringList();
         ui->descriptionLabel->setText(tr("Description: %1").arg(list.at(1)));
@@ -126,24 +139,48 @@ void DmxFlasher::showPortInfo(qint32 index)
 
 void DmxFlasher::DmxBootProtocolDoneSlot(bool success)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Flashin ended, successful?: "<<success;
     emit done(success);
 }
 
 void DmxFlasher::DmxBootPrintProgressInfoSlot(QString progress)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Progress info: "<<progress;
     emit printProgressInfo(progress);
 }
 
 void DmxFlasher::DmxBootProgressInPercentageSlot(qint32 progress)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Progress in percentage: "<<progress<<"%";
     emit progressInPercentage(progress);
 }
 
+void DmxFlasher::DmxBootProtocolErrorOcured(DmxBootProtocol::Errors error)
+{
+    FUNCTION_ENTER_TRACE;
+    switch(error)
+    {
+    case DmxBootProtocol::CantOpenPort:
+        emit showMessageBox(errorMessageCantOpen, errorMessageCantOpen, MESSAGE_BOX_CRITICIAL);
+        break;
+    case DmxBootProtocol::CantWrite:
+        emit showMessageBox(errorMessageCantWrite, errorMessageCantWrite, MESSAGE_BOX_CRITICIAL);
+        break;
+    case DmxBootProtocol::ReadTimeout:
+        emit showMessageBox(errorMessageTimeout, errorMessageTimeout, MESSAGE_BOX_CRITICIAL);
+        break;
+    default:        // unkown error ocured
+        emit showMessageBox(errorMessageUnkown, errorMessageUnkown, MESSAGE_BOX_CRITICIAL);
+        break;
+    }
+}
+
 void DmxFlasher::flash(QByteArray data)
 {
+    FUNCTION_ENTER_TRACE;
     emit startFlashing(ui->serialPortComboBox->currentText(), \
                        ui->addressLineEdit->text().toInt(0, 16), data);
 }

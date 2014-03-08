@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    FUNCTION_ENTER_TRACE;
     ui->setupUi(this);
     ui->progressBar->setVisible(false);
 
@@ -25,24 +26,27 @@ MainWindow::MainWindow(QWidget *parent) :
 
     flashingState = ReadingDataState;
 
-    connect(ui->actionAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
-    connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_flashButton_clicked()));
-    connect(ui->openFilePushButton, SIGNAL(clicked()), this, SLOT(on_actionOpen_File_triggered()));
+    connect(ui->actionAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()), Qt::QueuedConnection);
+    connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_flashButton_clicked()), Qt::QueuedConnection);
+    connect(ui->openFilePushButton, SIGNAL(clicked()), this, SLOT(on_actionOpen_File_triggered()), Qt::QueuedConnection);
 }
 
 MainWindow::~MainWindow()
 {
+    FUNCTION_ENTER_TRACE;
     delete ui;
 }
 
 void MainWindow::printProgressInfo(QString text)
 {
-    qDebug()<<"Printing progress info message i tu status bar: "<<text;
+    FUNCTION_ENTER_TRACE;
+    qDebug()<<"Printing progress info message ni tu status bar: "<<text;
     ui->statusBar->showMessage(text, 10000);
 }
 
 void MainWindow::on_actionOpen_File_triggered()
 {
+    FUNCTION_ENTER_TRACE;
     currentReader = NULL;
     fileToRead = QFileDialog::getOpenFileName(this, "Hex File", "Z:\\Yrid\\elektro\\ATmega8 soutez adc\\ATmega8 soutez adc\\Debug", suffixesFilters);
     qDebug()<<"File to open"<<fileToRead;
@@ -60,6 +64,7 @@ void MainWindow::on_actionOpen_File_triggered()
 
 void MainWindow::loadPlugins()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Loading Plugins";
 
     QDir pluginsDir = QDir(qApp->applicationDirPath());
@@ -98,12 +103,14 @@ void MainWindow::loadPlugins()
 
 void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffixesList)
 {
+    FUNCTION_ENTER_TRACE;
     FlasherPluginInterface *flasherPlugin = qobject_cast<FlasherPluginInterface*>(plugin);
     if(flasherPlugin)
     {
         connect(flasherPlugin, SIGNAL(done(bool)), this, SLOT(done(bool)), Qt::QueuedConnection);
         connect(flasherPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
         connect(flasherPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
+        connect(flasherPlugin, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
         QWidget *widget = flasherPlugin->getPluginWidget();
         ui->flashingTabWidget->addTab(widget, widget->windowTitle());
         flasherMap[widget] = plugin;
@@ -115,6 +122,7 @@ void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffix
         connect(readerPlugin, SIGNAL(done(QByteArray)), this, SLOT(done(QByteArray)), Qt::QueuedConnection);
         connect(readerPlugin, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
         connect(readerPlugin, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
+        connect(flasherPlugin, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
         qDebug()<<"Printing suffix group";
         QList<SuffixesStructure> suffixesListHelp = readerPlugin->getSuffixesGroups();
         for(int i = 0; i < suffixesListHelp.size(); i++)
@@ -139,16 +147,20 @@ void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffix
 
 void MainWindow::unknownFileSuffixMssage()
 {
+    FUNCTION_ENTER_TRACE;
     QMessageBox::warning(this, tr("Unknown file format"), tr("Unknown file format"));
 }
 
 void MainWindow::noFileSelected()
 {
+    FUNCTION_ENTER_TRACE;
     QMessageBox::warning(this, tr("No file selected"), tr("You mast select some file first"));
 }
 
 void MainWindow::on_flashButton_clicked()
 {
+    FUNCTION_ENTER_TRACE;
+    flashingState = ReadingDataState;
     if(currentReader)
     {
         ui->progressBar->setVisible(true);
@@ -163,13 +175,14 @@ void MainWindow::on_flashButton_clicked()
 
 void MainWindow::done(QByteArray data)
 {
+    FUNCTION_ENTER_TRACE;
     flashingState = FlashingDeviceState;
     dataArray = data;
     qDebug()<<"Reading plugin finished";
     if(dataArray.isEmpty())
     {
         ui->progressBar->setVisible(false);
-        QMessageBox::warning(this, "File Read Error", "Couldn't read file. Prabelby wrong format");
+        ui->statusBar->showMessage(tr("File readin FAILED!!!"), 0);
         qCritical()<<"No data readed, read plugin faild";
     }
     else
@@ -182,12 +195,11 @@ void MainWindow::done(QByteArray data)
 
 void MainWindow::done(bool success)
 {
+    FUNCTION_ENTER_TRACE;
     if(success)
         QMessageBox::information(this, tr("Flasnig completed"), tr("Flasnig completed"));
     else
-    {
-        QMessageBox::warning(this, tr("Flashing failed"), tr("Flashing faild"));
-    }
+        ui->statusBar->showMessage(tr("Flashing FALED!!!"), 0);
     ui->progressBar->setVisible(false);
 
     flashingState = ReadingDataState;
@@ -195,9 +207,29 @@ void MainWindow::done(bool success)
 
 void MainWindow::progressInPercentage(qint32 percentageProgress)
 {
+    FUNCTION_ENTER_TRACE;
     qreal percentagePerSate = 100/NumberOfStates;
     qreal percentagPase = percentagePerSate*flashingState;
     qreal currentStateProgress = (percentagePerSate/100)*percentageProgress;
     ui->progressBar->setValue(percentagPase+currentStateProgress);
     qDebug()<<"PROGRESS: "<<(qint32)percentagPase+currentStateProgress<<"% !!!!!!";
+}
+
+void MainWindow::showMessageBox(QString title, QString text, qint32 type)
+{
+    switch(type)
+    {
+    case MESSAGE_BOX_CRITICIAL:
+        QMessageBox::critical(this, title, text);
+        break;
+    case MESSAGE_BOX_INFORMATION:
+        QMessageBox::information(this, title, text);
+        break;
+    case MESSAGE_BOX_WARNING:
+        QMessageBox::warning(this, title, text);
+        break;
+    default:
+        QMessageBox::critical(this, title, text);
+        break;
+    }
 }

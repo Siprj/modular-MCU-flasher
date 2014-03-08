@@ -8,7 +8,7 @@
 void initLogger()
 {
     qSetMessagePattern("[%{if-debug}D%{endif}%{if-warning}W%{endif}%{if-critical}C%{endif}%{if-fatal}F%{endif}] %{file}:%{line} %{function} - %{message}");
-    freopen("trace.log", "w", stderr);
+    //freopen("trace.log", "w", stderr);
 }
 
 
@@ -16,7 +16,7 @@ void initLogger()
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    //initLogger();
+    initLogger();
     a.setWindowIcon(QIcon(":/ico/img/programicon.png"));
     MainWindow w;
     w.show();

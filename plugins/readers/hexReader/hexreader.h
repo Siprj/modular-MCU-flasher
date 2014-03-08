@@ -17,6 +17,7 @@ public:
     virtual void readData(QString fileName);
     virtual QList<SuffixesStructure> getSuffixesGroups();
 signals:
+    void showMessageBox(QString title, QString text, qint32 type);
     void printProgressInfo(QString info);
     void progressInPercentage(qint32 progress);
     void done(QByteArray data);

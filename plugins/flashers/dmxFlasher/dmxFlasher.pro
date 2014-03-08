@@ -22,6 +22,9 @@ HEADERS += dmxflasher.h \
 
 DESTDIR = ../../../complete/plugins
 
+DEFINES += \
+#    	TRACE_FUNCTION_CALLS
+
 OTHER_FILES += \
     dmxFlasher.json
 

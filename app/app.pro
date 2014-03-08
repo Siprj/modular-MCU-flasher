@@ -18,7 +18,8 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     interfaces/FlasherPluginInterface.h \
-    interfaces/ReaderPluginInterface.h
+    interfaces/ReaderPluginInterface.h \
+    interfaces/trace.h
 
 OTHER_FILES += \
     doc/BootLoaderPC.qdocconf  \
@@ -32,7 +33,8 @@ OTHER_FILES += \
 
 FORMS    += mainwindow.ui
 
-DEFINES += TEST
+DEFINES += \
+#           TRACE_FUNCTION_CALLS
 
 RESOURCES += resource.qrc
 

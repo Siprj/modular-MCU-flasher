@@ -2,6 +2,7 @@
 #define DMXFLASHER_H
 
 #include "../../../app/interfaces/FlasherPluginInterface.h"
+#include "DmxBootProtocol.h"
 
 namespace Ui {
 class DmxFlasher;
@@ -11,7 +12,6 @@ class QThread;
 class QWidget;
 class QTimer;
 class WidgetWithNotifi;
-class DmxBootProtocol;
 
 class DmxFlasher : public FlasherPluginInterface
 {
@@ -25,6 +25,7 @@ public:
     virtual QWidget* getPluginWidget();
 
 signals:
+    void showMessageBox(QString title, QString text, qint32 type);
     void startFlashing(QString portName, unsigned char deviceAddress, QByteArray dataToSend);
     void printProgressInfo(QString info);
     void progressInPercentage(qint32 progress);
@@ -39,6 +40,7 @@ private slots:
     void DmxBootProtocolDoneSlot(bool success);
     void DmxBootPrintProgressInfoSlot(QString progress);
     void DmxBootProgressInPercentageSlot(qint32 progress);
+    void DmxBootProtocolErrorOcured(DmxBootProtocol::Errors error);
 
 private:
     WidgetWithNotifi *dmxFlasherWidget;

@@ -11,6 +11,8 @@
 
 #include <QDebug>
 
+#include "../../../app/interfaces/trace.h"
+
 #define SERIAL_BAUD_RATE 250000
 #define SERIAL_DATA_SIZE QSerialPort::Data8
 #define SERIAL_PARITY QSerialPort::NoParity
@@ -23,6 +25,7 @@
 DmxBootProtocol::DmxBootProtocol(QObject *parent) :
     QObject(parent)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug("DMX Boot Protocol Constructor");
     this->portName = portName;
     serialPort = new QSerialPort(this);
@@ -34,7 +37,7 @@ DmxBootProtocol::DmxBootProtocol(QObject *parent) :
     receiveTimeoutTimer = new QTimer(this);
     receiveTimeoutTimer->setSingleShot(true);
     receiveTimeoutTimer->setInterval(READ_TIME_OUT);
-    connect(receiveTimeoutTimer, SIGNAL(timeout()), this, SLOT(receiveTimeoutTimerTimeout()));
+    connect(receiveTimeoutTimer, SIGNAL(timeout()), this, SLOT(receiveTimeoutTimerTimeout()), Qt::QueuedConnection);
 
     dataSizeToWrite = 0;
     dataSizeWriten = 0;
@@ -53,12 +56,13 @@ DmxBootProtocol::DmxBootProtocol(QObject *parent) :
 
     createStateMachine();
 
-    connect(serialPort, SIGNAL(readyRead()), this, SLOT(dataReceived()));
-    connect(serialPort, SIGNAL(bytesWritten(qint64)), this, SLOT(checkSendedDataSize(qint64)));
+    connect(serialPort, SIGNAL(readyRead()), this, SLOT(dataReceived()), Qt::QueuedConnection);
+    connect(serialPort, SIGNAL(bytesWritten(qint64)), this, SLOT(checkSendedDataSize(qint64)), Qt::QueuedConnection);
 }
 
 DmxBootProtocol::~DmxBootProtocol()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug("DMX Boot Protocol Destructor");
     delete serialPort;
     delete stateMachine;
@@ -66,6 +70,7 @@ DmxBootProtocol::~DmxBootProtocol()
 
 void DmxBootProtocol::startBootSequence(QString portName, unsigned char deviceAddress, QByteArray dataToSend)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Starting flasing device";
     this->dataToSend = dataToSend;
     this->deviceAddress = deviceAddress;
@@ -73,6 +78,7 @@ void DmxBootProtocol::startBootSequence(QString portName, unsigned char deviceAd
 
     if(!openPort())
     {
+        qDebug()<<"canot open port: "<<serialPort->errorString();
         emit errorOcured(CantOpenPort);
         return;
     }
@@ -82,12 +88,14 @@ void DmxBootProtocol::startBootSequence(QString portName, unsigned char deviceAd
 
 void DmxBootProtocol::startReceiveTimeoutTimer()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Starting receive timeout Timer";
     receiveTimeoutTimer->start();
 }
 
 int DmxBootProtocol::openPort()
 {
+    FUNCTION_ENTER_TRACE;
     emit printProgressInfo("Opening serial port");
     qDebug()<<"Opening serial port";
     serialPort->setPortName(portName);
@@ -121,6 +129,7 @@ int DmxBootProtocol::openPort()
 
 char DmxBootProtocol::calculateCRC(QByteArray array, qint32 size)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Calcluate CRC from data: "<<array.toHex()<<" size of array: "<<size;
     qDebug()<<"True size of array: "<<array.size();
     char crc = 0;
@@ -137,6 +146,7 @@ char DmxBootProtocol::calculateCRC(QByteArray array, qint32 size)
 
 void DmxBootProtocol::sendData(QByteArray array)
 {
+    FUNCTION_ENTER_TRACE;
     dataSizeWriten = 0;
     dataSizeToWrite = array.size();
     sendTimeoutTimer->start();        // will be stoped
@@ -151,13 +161,15 @@ void DmxBootProtocol::sendData(QByteArray array)
 
 qint32 DmxBootProtocol::progress()
 {
+    FUNCTION_ENTER_TRACE;
     quint32 dataIndex = currentPageNumber*pageSize;
     quint32 maxDataIndex = qMin(dataIndex+pageSize, (quint32)dataToSend.size());
     return (100*((qreal)(maxDataIndex/dataToSend.size())));
 }
 
-void DmxBootProtocol::sendCRCError()    // TODO set seq numbers, check packet length
+void DmxBootProtocol::sendCRCError()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Sending RCR error";
     sendErrorFlag = 2;
     QByteArray array;
@@ -173,7 +185,7 @@ void DmxBootProtocol::sendCRCError()    // TODO set seq numbers, check packet le
 
 void DmxBootProtocol::dataReceived()
 {
-
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Some data received";
     char byte = 0;
     while(serialPort->bytesAvailable())
@@ -187,7 +199,7 @@ void DmxBootProtocol::dataReceived()
                 qDebug()<<"Reading addres";
                 readState = ReadTypeAndSeq;
                 break;
-            case ReadTypeAndSeq:        // TODO add seq number in to some variable
+            case ReadTypeAndSeq:
                 readPacketType = byte & 0x0F;
                 readPacketSeq = ((byte & 0xF0) >> 4);
                 switch (readPacketType)
@@ -266,6 +278,7 @@ void DmxBootProtocol::dataReceived()
 
 void DmxBootProtocol::handleSerialError(QSerialPort::SerialPortError error)
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Some serial error ocured";
     if (error == QSerialPort::ResourceError) {
         emit printProgressInfo(QString("serial error hendler") + serialPort->errorString());
@@ -275,6 +288,7 @@ void DmxBootProtocol::handleSerialError(QSerialPort::SerialPortError error)
 
 void DmxBootProtocol::checkSendedDataSize(qint64 bytes)
 {
+    FUNCTION_ENTER_TRACE;
     dataSizeWriten += bytes;
     qDebug()<<"Check if all data was sended, data sended up to now: "<<QString("%1").arg(dataSizeWriten)<<" size of data to be sended: "<<QString("%1").arg(dataSizeToWrite);
     if(!serialPort->bytesToWrite())
@@ -295,12 +309,14 @@ void DmxBootProtocol::checkSendedDataSize(qint64 bytes)
 
 void DmxBootProtocol::storePageSize()
 {
+    FUNCTION_ENTER_TRACE;
     pageSize = qFromBigEndian(*((qint16*)readedData.constData()));
     qDebug()<<"Storing page size: "<<pageSize;
 }
 
 void DmxBootProtocol::sendBootData()        // move data tu buffer and add 2 to lastSendedSeqNumber
 {
+    FUNCTION_ENTER_TRACE;
     if(currentPageNumber*pageSize > (quint32)dataToSend.size())
     {
         qDebug()<<"All data sended";
@@ -334,7 +350,7 @@ void DmxBootProtocol::sendBootData()        // move data tu buffer and add 2 to 
         qDebug()<<"fill rest of packet with nop";
         for(; (qint32)i < pageSize+2; i++)
         {
-            array[i] = 0xFF;    // fill the res of memory with NOP  // TODO check if nop i realy 0xFF
+            array[i] = 0xFF;
         }
     }
     array[i] = calculateCRC(array, pageSize+2);
@@ -344,6 +360,7 @@ void DmxBootProtocol::sendBootData()        // move data tu buffer and add 2 to 
 
 void DmxBootProtocol::sendBootEnd()
 {
+    FUNCTION_ENTER_TRACE;
     // resolv conflict if sendErrorCRC and sendBootEnd
 
     if(!sendErrorFlag || (sendErrorFlag && sendErrorSeq != readedData[0]))
@@ -364,6 +381,7 @@ void DmxBootProtocol::sendBootEnd()
 
 void DmxBootProtocol::sendStartBootRequest()
 {
+    FUNCTION_ENTER_TRACE;
 
     emit printProgressInfo("sending boot start packet");
     qDebug()<<"Sending start boot request packet";
@@ -378,8 +396,9 @@ void DmxBootProtocol::sendStartBootRequest()
 
 }
 
-void DmxBootProtocol::resendBootData()      // TODO send CRCError or set flags for data send function
+void DmxBootProtocol::resendBootData()
 {
+    FUNCTION_ENTER_TRACE;
     if(!sendErrorFlag || (sendErrorFlag && sendErrorSeq != readedData[0]))
     {
         --currentPageNumber;
@@ -391,6 +410,7 @@ void DmxBootProtocol::resendBootData()      // TODO send CRCError or set flags f
 
 void DmxBootProtocol::resendBootEnd()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Resend boot end";
     if(!sendErrorFlag || (sendErrorFlag && sendErrorSeq != readedData[0]))
     {
@@ -403,12 +423,14 @@ void DmxBootProtocol::resendBootEnd()
 
 void DmxBootProtocol::receiveTimeoutTimerTimeout()
 {
+    FUNCTION_ENTER_TRACE;
     qDebug()<<"Receive timeout read time timeouted";
     emit noRespond();
 }
 
 void DmxBootProtocol::_DBPSuccess()
 {
+    FUNCTION_ENTER_TRACE;
     emit printProgressInfo("Flasing ended");
     qDebug()<<"Booting sucessfuly ended";
     serialPort->close();
@@ -417,20 +439,25 @@ void DmxBootProtocol::_DBPSuccess()
 
 void DmxBootProtocol::_sendError()
 {
+    FUNCTION_ENTER_TRACE;
     qCritical()<<"Unable send data";
     serialPort->close();
+    emit errorOcured(CantWrite);
     emit done(false);
 }
 
 void DmxBootProtocol::_receiveTimeout()
 {
+    FUNCTION_ENTER_TRACE;
     qCritical()<<"Device is not responding";
     serialPort->close();
+    emit errorOcured(ReadTimeout);
     emit done(false);
 }
 
 void DmxBootProtocol::createStateMachine()
 {
+    FUNCTION_ENTER_TRACE;
     stateMachine = new QStateMachine;
     QState *startBootState = new QState;
     QState *receiveBootStartRespondSatate = new QState;
@@ -454,29 +481,29 @@ void DmxBootProtocol::createStateMachine()
     // Send Start Boot End
 
     // Receive Boot Enter Respond Start
-    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
+    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()), Qt::QueuedConnection);
     receiveBootStartRespondSatate->addTransition(this, SIGNAL(bootEnteredRespondReceived()), sendBootDataState);
     receiveBootStartRespondSatate->addTransition(this, SIGNAL(CRCCalculateError()), sendErrorReceiveBootEnterRespondState);
     receiveBootStartRespondSatate->addTransition(this ,SIGNAL(receiveCRCError()), sendErrorReceiveBootEnterRespondState);
     receiveBootStartRespondSatate->addTransition(this, SIGNAL(noRespond()), noDeviceRespondFinalState);
-    connect(receiveBootStartRespondSatate, SIGNAL(exited()), this, SLOT(storePageSize()));
+    connect(receiveBootStartRespondSatate, SIGNAL(exited()), this, SLOT(storePageSize()), Qt::QueuedConnection);
     // Receive Boot Enter Respond End
 
     // Receive Send Error Boot Enter Respond Start
-    connect(sendErrorReceiveBootEnterRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()));
+    connect(sendErrorReceiveBootEnterRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()), Qt::QueuedConnection);
     sendErrorReceiveBootEnterRespondState->addTransition(this, SIGNAL(CRCErrorSended()), receiveBootStartRespondSatate);
     sendErrorReceiveBootEnterRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Receive Send Error Boot Enter Respond End
 
     // Send Boot Data Start
-    connect(sendBootDataState, SIGNAL(entered()), this, SLOT(sendBootData()));
+    connect(sendBootDataState, SIGNAL(entered()), this, SLOT(sendBootData()), Qt::QueuedConnection);
     sendBootDataState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
     sendBootDataState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendBootDataState->addTransition(this ,SIGNAL(allDataSended()), sendBootEndState);
     // Send Boot Data End
 
     // Receive Respond ACK/ERROR (receiveDataRespondState) Start
-    connect(receiveDataRespondState, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
+    connect(receiveDataRespondState, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()), Qt::QueuedConnection);
     receiveDataRespondState->addTransition(this ,SIGNAL(CRCCalculateError()), sendErrorReceiveDataRespondState);
     receiveDataRespondState->addTransition(this, SIGNAL(receiveACK()), sendBootDataState);
     receiveDataRespondState->addTransition(this ,SIGNAL(receiveCRCError()), resendBootDateState);
@@ -484,46 +511,46 @@ void DmxBootProtocol::createStateMachine()
     // Receive Respond ACK/ERROR (receiveDataRespondState) End
 
     // Send Error Receive Data Respond Sate Start
-    connect(sendErrorReceiveDataRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()));
+    connect(sendErrorReceiveDataRespondState, SIGNAL(entered()), this, SLOT(sendCRCError()), Qt::QueuedConnection);
     sendErrorReceiveDataRespondState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
     sendErrorReceiveDataRespondState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Send Error Receive Data Respond Sate End
 
     // Resend Boot Data Start
-    connect(resendBootDateState, SIGNAL(entered()), this, SLOT(resendBootData()));
+    connect(resendBootDateState, SIGNAL(entered()), this, SLOT(resendBootData()), Qt::QueuedConnection);
     resendBootDateState->addTransition(this, SIGNAL(packetSended()), receiveDataRespondState);
     resendBootDateState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     // Resend Boot Data End
 
     // Send Boot End Start
-    connect(sendBootEndState, SIGNAL(entered()), this, SLOT(sendBootEnd()));
+    connect(sendBootEndState, SIGNAL(entered()), this, SLOT(sendBootEnd()), Qt::QueuedConnection);
     sendBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendBootEndState->addTransition(this, SIGNAL(packetSended()), receiveBootEndRespondState);
     // Send Boot End End
 
     // Receive Respond ACK/ERROR Star
-    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()));
+    connect(receiveBootStartRespondSatate, SIGNAL(entered()), this, SLOT(startReceiveTimeoutTimer()), Qt::QueuedConnection);
     receiveBootEndRespondState->addTransition(this, SIGNAL(CRCCalculateError()), sendBootEndState);
     receiveBootEndRespondState->addTransition(this, SIGNAL(receiveCRCError()), sendErrorreceiveRespondBootEndState);
     receiveBootEndRespondState->addTransition(this, SIGNAL(receiveACK()), regularFinalState);
     // Receive Respond ACK/ERROR End
 
     // Send Error Receive Respond Boot End State Start
-    connect(sendErrorreceiveRespondBootEndState, SIGNAL(entered()), this, SLOT(resendBootEnd()));
+    connect(sendErrorreceiveRespondBootEndState, SIGNAL(entered()), this, SLOT(resendBootEnd()), Qt::QueuedConnection);
     sendErrorreceiveRespondBootEndState->addTransition(sendTimeoutTimer, SIGNAL(timeout()), unableSendDataFinalState);
     sendErrorreceiveRespondBootEndState->addTransition(this, SIGNAL(packetSended()), receiveBootEndRespondState);
     // Send Error Receive Respond Boot End State End
 
     // Unable Send Data Final State Start
-    connect(unableSendDataFinalState, SIGNAL(entered()), this, SLOT(_sendError()));
+    connect(unableSendDataFinalState, SIGNAL(entered()), this, SLOT(_sendError()), Qt::QueuedConnection);
     // Unable Send Data Final State End
 
     // No Device Respond Final State Start
-    connect(noDeviceRespondFinalState, SIGNAL(entered()), this, SLOT(_receiveTimeout()));
+    connect(noDeviceRespondFinalState, SIGNAL(entered()), this, SLOT(_receiveTimeout()), Qt::QueuedConnection);
     // No Device Respond Final State End
 
     // Regular Final State Start
-    connect(regularFinalState, SIGNAL(entered()), this, SLOT(_DBPSuccess()));
+    connect(regularFinalState, SIGNAL(entered()), this, SLOT(_DBPSuccess()), Qt::QueuedConnection);
     // Regular Final State Start
 
 

@@ -7,6 +7,7 @@
 #include <QWidget>
 
 
+#include "interfaces/trace.h"
 #include "interfaces/FlasherPluginInterface.h"
 #include "interfaces/ReaderPluginInterface.h"
 
@@ -40,6 +41,7 @@ private slots:
     void done(QByteArray data);        // finish slot for Reder Plugins
     void done(bool success);                        // finish slot for Flashing Plugins
     void progressInPercentage(qint32 percentageProgress);
+    void showMessageBox(QString title, QString text, qint32 type);
 
 private:
     void loadPlugins();

@@ -46,6 +46,11 @@ DmxFlasher::~DmxFlasher()
     delete thread;
 }
 
+void DmxFlasher::putSettings(QSettings *settings)
+{
+
+}
+
 QWidget *DmxFlasher::getPluginWidget()
 {
     FUNCTION_ENTER_TRACE;

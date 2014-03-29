@@ -36,6 +36,6 @@ signals:
     virtual void done(QByteArray data) = 0;
 };
 
-Q_DECLARE_INTERFACE(ReaderPluginInterface, "BootLoader.ReaderPluginInterface-1.0");
+Q_DECLARE_INTERFACE(ReaderPluginInterface, "BootLoader.ReaderPluginInterface-1.1");
 
 #endif // READERPLUGININTERFACE_H

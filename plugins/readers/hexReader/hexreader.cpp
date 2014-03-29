@@ -26,6 +26,11 @@ HexReader::~HexReader()
     delete thread;
 }
 
+void HexReader::putSettings(QSettings *settings)
+{
+
+}
+
 void HexReader::readData(QString fileName)
 {
     FUNCTION_ENTER_TRACE;

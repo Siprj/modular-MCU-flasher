@@ -9,11 +9,12 @@ class QThread;
 class HexReader : public ReaderPluginInterface
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "BootLoader.reader.inteface-0-1" FILE "hexReader.json")
+    Q_PLUGIN_METADATA(IID "BootLoader.reader.HexReader-0-1" FILE "hexReader.json")
     Q_INTERFACES(ReaderPluginInterface)
 public:
     HexReader();
     virtual ~HexReader();
+    virtual void putSettings(QSettings *settings);
     virtual void readData(QString fileName);
     virtual QList<SuffixesStructure> getSuffixesGroups();
 signals:

@@ -15,11 +15,12 @@ class DmxFlasherWidget;
 class DmxFlasher : public FlasherPluginInterface
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "BootLoader.flesher.inteface-0-1" FILE "dmxFlasher.json")
+    Q_PLUGIN_METADATA(IID "BootLoader.flesher.DBP-Flasher-0-1" FILE "dmxFlasher.json")
     Q_INTERFACES(FlasherPluginInterface)
 public:
     DmxFlasher();
     ~DmxFlasher();
+    virtual void putSettings(QSettings *settings);
     virtual void flash(QByteArray data);
     virtual QWidget* getPluginWidget();
 

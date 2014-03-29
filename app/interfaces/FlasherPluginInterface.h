@@ -22,6 +22,6 @@ signals:
     virtual void done(bool success) = 0;
 };
 
-Q_DECLARE_INTERFACE(FlasherPluginInterface, "BootLoader.FlasherPluginInterface-1.0");
+Q_DECLARE_INTERFACE(FlasherPluginInterface, "BootLoader.FlasherPluginInterface-1.1");
 
 #endif // FLASHERPLUGIN_H

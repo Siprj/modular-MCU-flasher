@@ -11,6 +11,10 @@
 #include <QPluginLoader>
 #include <QMessageBox>
 
+#include <QSettings>
+
+#define LAST_READ_PATH_SETTINGS "mainApp/lastReadFolderPosition"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -19,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->progressBar->setVisible(false);
 
-    loadPlugins();
+
 
     currentReader = NULL;
     currentFlasher = NULL;
@@ -29,6 +33,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()), Qt::QueuedConnection);
     connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_flashButton_clicked()), Qt::QueuedConnection);
     connect(ui->openFilePushButton, SIGNAL(clicked()), this, SLOT(on_actionOpen_File_triggered()), Qt::QueuedConnection);
+
+    settingsGlobal = new QSettings(QSettings::UserScope, "BootLoaderPC", "BootLoaderPC");
+    loadSettings();
+
+    loadPlugins();
 }
 
 MainWindow::~MainWindow()
@@ -48,16 +57,23 @@ void MainWindow::on_actionOpen_File_triggered()
 {
     FUNCTION_ENTER_TRACE;
     currentReader = NULL;
-    fileToRead = QFileDialog::getOpenFileName(this, "Hex File", "Z:\\Yrid\\elektro\\ATmega8 soutez adc\\ATmega8 soutez adc\\Debug", suffixesFilters);
+    fileToRead = QFileDialog::getOpenFileName(this, "Source file", lastReadFolderPosition /*"Z:\\Yrid\\elektro\\ATmega8 soutez adc\\ATmega8 soutez adc\\Debug"*/, suffixesFilters);
     qDebug()<<"File to open"<<fileToRead;
-    QFileInfo fileInfo(fileToRead);
-    ui->openFileLineEdit->setText(fileToRead);
-    if(readersSuffixesMap.contains(fileInfo.suffix()))
+    if(!fileToRead.isEmpty())
     {
-        currentReader = qobject_cast<ReaderPluginInterface*>(readersSuffixesMap[fileInfo.suffix()]);
+        QFileInfo fileInfo(fileToRead);
+
+        lastReadFolderPosition = fileInfo.absoluteDir().path();
+        settingsGlobal->setValue(LAST_READ_PATH_SETTINGS, lastReadFolderPosition);
+
+        ui->openFileLineEdit->setText(fileToRead);
+        if(readersSuffixesMap.contains(fileInfo.suffix()))
+        {
+            currentReader = qobject_cast<ReaderPluginInterface*>(readersSuffixesMap[fileInfo.suffix()]);
+        }
+        else
+            unknownFileSuffixMssage();
     }
-    else
-        unknownFileSuffixMssage();
 
     qDebug()<<"currentReader: "<<currentReader;
 }
@@ -111,6 +127,7 @@ void MainWindow::publishPlugin(QObject *plugin, QStringList &composedGroupSuffix
         connect(basicInterface, SIGNAL(printProgressInfo(QString)), this, SLOT(printProgressInfo(QString)), Qt::QueuedConnection);
         connect(basicInterface, SIGNAL(progressInPercentage(qint32)), this, SLOT(progressInPercentage(qint32)), Qt::QueuedConnection);
         connect(basicInterface, SIGNAL(showMessageBox(QString,QString,qint32)), this, SLOT(showMessageBox(QString,QString,qint32)), Qt::QueuedConnection);
+        basicInterface->putSettings(settingsGlobal);
     }
 
 
@@ -165,6 +182,12 @@ void MainWindow::noFileSelected()
     QMessageBox::warning(this, tr("No file selected"), tr("You mast select some file first"));
 }
 
+void MainWindow::loadSettings()
+{
+    FUNCTION_ENTER_TRACE;
+    lastReadFolderPosition = settingsGlobal->value(LAST_READ_PATH_SETTINGS, "").toString();
+}
+
 void MainWindow::on_flashButton_clicked()
 {
     FUNCTION_ENTER_TRACE;
@@ -211,6 +234,7 @@ void MainWindow::done(bool success)
     ui->progressBar->setVisible(false);
 
     flashingState = ReadingDataState;
+    ui->progressBar->setValue(0);
 }
 
 void MainWindow::progressInPercentage(qint32 percentageProgress)

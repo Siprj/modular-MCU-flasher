@@ -8,6 +8,11 @@
 
 #include "../../../app/interfaces/trace.h"
 #include <QDebug>
+#include <QSettings>
+
+// Device address is storen as unsigned int
+#define SETTINGS_LAST_DEVICE_ADDRESS "plugin/flasher/dmxFlasher/deviceAddress"
+#define SETTINGS_LAST_SERIAL_PORT    "plugin/flasher/dmxFlasher/serialPort"
 
 
 DmxFlasherWidget::DmxFlasherWidget(QWidget *parent) :
@@ -51,6 +56,18 @@ unsigned char DmxFlasherWidget::getDeviceAddress()
     return deviceAddress;
 }
 
+void DmxFlasherWidget::setSettings(QSettings *settings) // this is called from GUI thread only
+{
+    this->settings = settings;
+    deviceAddress = (unsigned char)settings->value(SETTINGS_LAST_DEVICE_ADDRESS, 0).toUInt();
+    ui->addressLineEdit->setText(QString("%1").arg((quint32)deviceAddress, 0, 16));
+
+    *selectedSerialPortName = settings->value(SETTINGS_LAST_SERIAL_PORT, "").toString();
+
+    refreshSerials();
+    ui->serialPortComboBox->setCurrentText(*selectedSerialPortName);
+}
+
 void DmxFlasherWidget::showEvent(QShowEvent *event)
 {
     FUNCTION_ENTER_TRACE;
@@ -91,18 +108,21 @@ void DmxFlasherWidget::refreshSerials()
     if(serialComboBoxIndex != -1)
     {
         ui->serialPortComboBox->setCurrentIndex(serialComboBoxIndex);
+
+        QMutexLocker locker(mutex);
+        Q_UNUSED(locker);
+
+        *selectedSerialPortName = ui->serialPortComboBox->currentText();
+        qDebug()<<"Save serial port name: "<<*selectedSerialPortName;
+        settings->setValue(SETTINGS_LAST_SERIAL_PORT, *selectedSerialPortName);
     }
 }
 
 void DmxFlasherWidget::publicPortInfo(qint32 index)
 {
     FUNCTION_ENTER_TRACE;
-    QMutexLocker locker(mutex);
-    Q_UNUSED(locker);
-
     if (index != -1) {
         QStringList list = ui->serialPortComboBox->itemData(index).toStringList();
-        *selectedSerialPortName = list.at(0); // can operate with serial port name
         ui->descriptionLabel->setText(tr("Description: %1").arg(list.at(1)));
         ui->manufacturerLabel->setText(tr("Manufacturer: %1").arg(list.at(2)));
         ui->locationLabel->setText(tr("Location: %1").arg(list.at(3)));
@@ -120,6 +140,7 @@ void DmxFlasherWidget::publicDeviceAddress(QString)
     QMutexLocker locker(mutex);
     Q_UNUSED(locker);
     deviceAddress = ui->addressLineEdit->text().toInt(0, 16);
+    settings->setValue(SETTINGS_LAST_DEVICE_ADDRESS, (unsigned int) deviceAddress);
 }
 
 void DmxFlasherWidget::showWidgetVisiblityChanget(bool isVisible)

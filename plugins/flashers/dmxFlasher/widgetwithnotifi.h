@@ -9,6 +9,7 @@ class DmxFlasherWidget;
 
 class QTimer;
 class QMutex;
+class QSettings;
 
 class DmxFlasherWidget : public QWidget
 {
@@ -19,6 +20,11 @@ public:
 
     QString getSerialPortName();
     unsigned char getDeviceAddress();
+
+    void setSerialPortName(QString portName);
+    void setDeviceAddress(unsigned char deviceAddress);
+
+    void setSettings(QSettings *settings);
 
 signals:
     void widgetVisibilityChanged(bool isVisible);
@@ -39,6 +45,8 @@ private:
 
 
     Ui::DmxFlasherWidget *ui;
+    QSettings *settings;
+
 
     QMutex *mutex;
     QString *selectedSerialPortName;

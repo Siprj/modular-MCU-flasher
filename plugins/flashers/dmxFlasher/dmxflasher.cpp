@@ -46,9 +46,11 @@ DmxFlasher::~DmxFlasher()
     delete thread;
 }
 
+
+// must by called after creation of plugin
 void DmxFlasher::putSettings(QSettings *settings)
 {
-
+    dmxFlasherWidget->setSettings(settings);
 }
 
 QWidget *DmxFlasher::getPluginWidget()

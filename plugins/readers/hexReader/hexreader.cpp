@@ -28,7 +28,7 @@ HexReader::~HexReader()
 
 void HexReader::putSettings(QSettings *settings)
 {
-
+    Q_UNUSED(settings);
 }
 
 void HexReader::readData(QString fileName)

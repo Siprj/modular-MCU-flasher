@@ -17,6 +17,7 @@ class MainWindow;
 }
 
 class QPluginLoader;
+class QSettings;
 
 class MainWindow : public QMainWindow
 {
@@ -49,6 +50,7 @@ private:
     void publishPlugin(QObject *plugin, QStringList &composedGroupSuffixesList);
     void unknownFileSuffixMssage();
     void noFileSelected();
+    void loadSettings();
 
     Ui::MainWindow *ui;
 
@@ -67,6 +69,9 @@ private:
     FlasherPluginInterface *currentFlasher;
 
     FlashinSate flashingState;
+    QSettings *settingsGlobal;
+
+    QString lastReadFolderPosition;
 };
 
 #endif // MAINWINDOW_H

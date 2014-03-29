@@ -10,8 +10,7 @@ class DmxFlasher;
 
 class QThread;
 class QWidget;
-class QTimer;
-class WidgetWithNotifi;
+class DmxFlasherWidget;
 
 class DmxFlasher : public FlasherPluginInterface
 {
@@ -32,20 +31,13 @@ signals:
     void done(bool success);
 
 private slots:
-    void refreshSerials();
-    void showWidgetVisiblityChanget(bool isVisible);
-    void serialComboboxExpanded(bool isExpanded);
-    void showPortInfo(qint32 index);
-
     void DmxBootProtocolDoneSlot(bool success);
     void DmxBootPrintProgressInfoSlot(QString progress);
     void DmxBootProgressInPercentageSlot(qint32 progress);
     void DmxBootProtocolErrorOcured(DmxBootProtocol::Errors error);
 
 private:
-    WidgetWithNotifi *dmxFlasherWidget;
-    Ui::DmxFlasher *ui;
-    QTimer *serialListRefreshTimer;
+    DmxFlasherWidget *dmxFlasherWidget;
     DmxBootProtocol *dmxBootProtocol;
 
     QThread *thread;

@@ -29,4 +29,4 @@ OTHER_FILES += \
     dmxFlasher.json
 
 FORMS += \
-    dmxFlasher.ui
+    dmxFlasherWidget.ui

@@ -230,7 +230,7 @@ void MainWindow::done(bool success)
     if(success)
         QMessageBox::information(this, tr("Flasnig completed"), tr("Flasnig completed"));
     else
-        ui->statusBar->showMessage(tr("Flashing FALED!!!"), 0);
+        ui->statusBar->showMessage(tr("Flashing FAILED!!!"), 0);
     ui->progressBar->setVisible(false);
 
     flashingState = ReadingDataState;
@@ -241,10 +241,10 @@ void MainWindow::progressInPercentage(qint32 percentageProgress)
 {
     FUNCTION_ENTER_TRACE;
     qreal percentagePerSate = 100/NumberOfStates;
-    qreal percentagPase = percentagePerSate*flashingState;
+    qreal percentagPhase = percentagePerSate*flashingState;
     qreal currentStateProgress = (percentagePerSate/100)*percentageProgress;
-    ui->progressBar->setValue(percentagPase+currentStateProgress);
-    qDebug()<<"PROGRESS: "<<(qint32)percentagPase+currentStateProgress<<"% !!!!!!";
+    ui->progressBar->setValue(percentagPhase+currentStateProgress);
+    qDebug()<<"PROGRESS: "<<(qint32)percentagPhase+currentStateProgress<<"% !!!!!!";
 }
 
 void MainWindow::showMessageBox(QString title, QString text, qint32 type)

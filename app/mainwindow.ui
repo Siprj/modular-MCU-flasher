@@ -73,9 +73,13 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="flashButton">
+       <widget class="QPushButton" name="programChipButton">
         <property name="text">
-         <string>Flash</string>
+         <string>Program Chip</string>
+        </property>
+        <property name="icon">
+         <iconset resource="resource.qrc">
+          <normaloff>:/menu/img/transferleftright.png</normaloff>:/menu/img/transferleftright.png</iconset>
         </property>
        </widget>
       </item>

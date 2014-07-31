@@ -38,7 +38,7 @@ public slots:
 
 private slots:
     void on_actionOpen_File_triggered();
-    void on_flashButton_clicked();
+    void on_programChipButton_clicked();
 
     void done(QByteArray data);        // finish slot for Reder Plugins
     void done(bool success);                        // finish slot for Flashing Plugins

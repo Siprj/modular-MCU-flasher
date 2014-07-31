@@ -43,13 +43,12 @@ void HexReader::readData(QString fileName)
 
     if(dataSize == 0)
     {
-        qDebug()<<"Redadni HEX faild: "<<hexReaderCore->getErrorStr().c_str();
-        QMessageBox::warning(NULL, "asdfasdf", "asdfasdf");
+        qDebug()<<"Reading HEX faild: "<<hexReaderCore->getErrorStr().c_str();
+        QMessageBox::warning(NULL, "File is corupted or empty", "File is corupted or empty");
         done(QByteArray());
         return;
     }
 
-    qDebug()<<"Something is REALY WRONG dta to readed: "<<dataSize;
     QByteArray dataArray;
     dataArray.resize(dataSize);
 

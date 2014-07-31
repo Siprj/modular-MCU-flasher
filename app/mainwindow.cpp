@@ -15,6 +15,7 @@
 
 #define LAST_READ_PATH_SETTINGS "mainApp/lastReadFolderPosition"
 
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -31,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     flashingState = ReadingDataState;
 
     connect(ui->actionAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()), Qt::QueuedConnection);
-    connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_flashButton_clicked()), Qt::QueuedConnection);
+    connect(ui->actionProgram, SIGNAL(triggered()), this, SLOT(on_programChipButton_clicked()), Qt::QueuedConnection);
     connect(ui->openFilePushButton, SIGNAL(clicked()), this, SLOT(on_actionOpen_File_triggered()), Qt::QueuedConnection);
 
     settingsGlobal = new QSettings(QSettings::UserScope, "BootLoaderPC", "BootLoaderPC");
@@ -49,7 +50,7 @@ MainWindow::~MainWindow()
 void MainWindow::printProgressInfo(QString text)
 {
     FUNCTION_ENTER_TRACE;
-    qDebug()<<"Printing progress info message ni tu status bar: "<<text;
+    qDebug()<<"Printing progress info message in to status bar: "<<text;
     ui->statusBar->showMessage(text, 10000);
 }
 
@@ -188,7 +189,7 @@ void MainWindow::loadSettings()
     lastReadFolderPosition = settingsGlobal->value(LAST_READ_PATH_SETTINGS, "").toString();
 }
 
-void MainWindow::on_flashButton_clicked()
+void MainWindow::on_programChipButton_clicked()
 {
     FUNCTION_ENTER_TRACE;
     flashingState = ReadingDataState;

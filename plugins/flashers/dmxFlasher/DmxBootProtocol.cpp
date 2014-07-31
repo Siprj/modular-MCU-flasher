@@ -138,7 +138,8 @@ char DmxBootProtocol::calculateCRC(QByteArray array, qint32 size)
     {
         crc += array[i];
     }
-    crc = (char)(0xFF - crc) + 1;
+    //crc = (char)(0xFF - crc) + 1;
+    crc = (char)(~crc) + 1;
 
     qDebug()<<"Compiuted CRC is: "<<QString("%1").arg((int)crc, 0, 16);
     return crc;

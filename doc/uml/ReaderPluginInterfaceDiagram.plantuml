@@ -1,0 +1,15 @@
+@startuml
+
+interface ReaderPlugin {
+    + {abstract} readData(QString fileName) = 0 : void 
+    + {abstract} getSuffixesGroups() = 0 : QList<SuffixesStructure> 
+    + {abstract} putSettings(QSettings *settings) = 0 : void
+    -- 
+    signals:
+    + {abstract} showMessageBox(QString title, QString text, qint32 type) = 0 : void
+    + {abstract} printProgressInfo(QString info)  = 0 : void
+    + {abstract} progressInPercentage(qint32 progress) = 0 : void
+    + {abstract} done(QByteArray data)  = 0 : void
+}
+
+@enduml

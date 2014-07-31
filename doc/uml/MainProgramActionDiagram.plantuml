@@ -1,0 +1,13 @@
+@startuml
+
+start
+: Init objects;
+: Find all plugins;
+: Publish all compatible plugins;
+
+while (exit condition != true )
+ : Process UI events;
+endwhile
+stop
+
+@enduml

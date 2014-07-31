@@ -1,0 +1,12 @@
+@startuml
+
+state StartBoot { 
+[*] --> SendStartBoot
+SendStartBoot --> ReceiveBootEnterRespond
+ReceiveBootEnterRespond -left-> SendError
+ReceiveBootEnterRespond --> [*]
+
+SendError --> ReceiveBootEnterRespond
+}
+
+@enduml

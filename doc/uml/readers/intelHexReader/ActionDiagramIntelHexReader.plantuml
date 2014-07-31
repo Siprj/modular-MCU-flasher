@@ -1,0 +1,16 @@
+@startuml 
+
+start
+: Open file;
+
+while (End of file != true )
+: Read line;
+: Calcultace CRC;
+: Parse record type;
+: Parse data based\n on record type;
+endwhile
+
+: Sort entries by address;
+stop
+
+@enduml

@@ -1,0 +1,12 @@
+@startuml
+
+state EndBoot { 
+[*] --> SendBootEnd
+SendBootEnd --> ReceiveBootEndACKERROR
+ReceiveBootEndACKERROR -up-> SendBootEnd
+ReceiveBootEndACKERROR --> SendError
+ReceiveBootEndACKERROR --> [*]
+SendError -left-> ReceiveBootEndACKERROR
+}
+
+@enduml

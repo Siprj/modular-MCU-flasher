@@ -1,0 +1,12 @@
+@startuml
+
+state Edning { 
+[*] --> SendBootEnd
+SendBootEnd --> ReceiveBootEndACKERROR
+ReceiveBootEndACKERROR -up-> SendBootEnd
+ReceiveBootEndACKERROR --> SendError3
+ReceiveBootEndACKERROR --> [*]
+SendError3 -left-> ReceiveBootEndACKERROR
+}
+
+@enduml

@@ -1,0 +1,15 @@
+@startuml
+
+interface FlasherPlugin {
+    + {abstract} getPluginWidget() = 0 ; QWidget
+    + {abstract} flash(QByteArray data) = 0 : void 
+    + {abstract} putSettings(QSettings *settings) = 0 : void
+    -- 
+    signals:
+    + {abstract} showMessageBox(QString title, QString text, qint32 type) = 0 : void
+    + {abstract} printProgressInfo(QString info) = 0 : void
+    + {abstract} progressInPercentage(qint32 progress) = 0 : void
+    + {abstract} done(bool success) = 0 : void
+}
+
+@enduml

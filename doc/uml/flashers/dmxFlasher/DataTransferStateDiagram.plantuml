@@ -1,0 +1,15 @@
+@startuml
+
+state DataTransfer { 
+[*] --> SendBootData
+SendBootData -right-> ReceiveRespondACKERROR
+SendBootData --> [*] : All data sended
+
+ReceiveRespondACKERROR --> ResendBootData
+ReceiveRespondACKERROR --> SendBootData
+ReceiveRespondACKERROR --> SendError
+SendError --> ReceiveRespondACKERROR
+ResendBootData --> ReceiveRespondACKERROR
+}
+
+@enduml

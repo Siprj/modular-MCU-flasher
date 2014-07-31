@@ -1,0 +1,28 @@
+@startuml
+
+[*] --> StartBoot
+state StartBoot {
+}
+
+StartBoot --> UnableSendData : Write error
+StartBoot --> NoRespond : Read error
+
+StartBoot --> DataTransfer : Receive start\nboot respond\n with page size
+
+state DataTransfer {
+}
+
+DataTransfer -left-> UnableSendData : Write error
+DataTransfer -right-> NoRespond  : Read error
+
+DataTransfer --> EndBoot
+
+EndBoot --> UnableSendData : Write error
+EndBoot --> NoRespond  : Read error
+
+EndBoot --> [*]
+
+UnableSendData --> [*]
+NoRespond --> [*]
+
+@enduml
